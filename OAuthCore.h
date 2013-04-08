@@ -8,11 +8,11 @@
 #import <Foundation/Foundation.h>
 
 extern NSString *OAuthorizationHeader(NSURL *url,
-									  NSString *method, 
-									  NSData *body, 
-									  NSString *_oAuthConsumerKey, 
-									  NSString *_oAuthConsumerSecret, 
-									  NSString *_oAuthToken, 
+									  NSString *method,
+									  NSData *body,
+									  NSString *_oAuthConsumerKey,
+									  NSString *_oAuthConsumerSecret,
+									  NSString *_oAuthToken,
 									  NSString *_oAuthTokenSecret);
 
 extern NSString *OAuthorizationHeaderWithCallback(NSURL *url,
@@ -23,3 +23,20 @@ extern NSString *OAuthorizationHeaderWithCallback(NSURL *url,
 												  NSString *_oAuthToken,
 												  NSString *_oAuthTokenSecret,
 												  NSString *_oAuthCallback);
+
+extern NSURL *OAuthorizationURL(NSURL *url,
+								NSString *method,
+                                NSData *body,
+								NSString *_oAuthConsumerKey,
+								NSString *_oAuthConsumerSecret,
+								NSString *_oAuthToken,
+								NSString *_oAuthTokenSecret);
+
+extern NSURL *OAuthorizationURLWithCallback(NSURL *url,
+											NSString *method,
+											NSData *body,
+											NSString *_oAuthConsumerKey,
+											NSString *_oAuthConsumerSecret,
+											NSString *_oAuthToken,
+											NSString *_oAuthTokenSecret,
+											NSString *_oAuthCallback);

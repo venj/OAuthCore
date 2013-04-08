@@ -10,6 +10,9 @@
 #import "NSData+Base64.h"
 #import <CommonCrypto/CommonHMAC.h>
 
+// Private function
+NSDictionary *OAuthorizationKeyValuePairWithCallback(NSURL *url, NSString *method, NSData *body, NSString *_oAuthConsumerKey, NSString *_oAuthConsumerSecret, NSString *_oAuthToken, NSString *_oAuthTokenSecret, NSString *_oAuthCallback);
+
 static NSInteger SortParameter(NSString *key1, NSString *key2, void *context) {
 	NSComparisonResult r = [key1 compare:key2];
 	if(r == NSOrderedSame) { // compare by value in this case
@@ -32,6 +35,43 @@ NSString *OAuthorizationHeader(NSURL *url, NSString *method, NSData *body, NSStr
 }
 
 NSString *OAuthorizationHeaderWithCallback(NSURL *url, NSString *method, NSData *body, NSString *_oAuthConsumerKey, NSString *_oAuthConsumerSecret, NSString *_oAuthToken, NSString *_oAuthTokenSecret, NSString *_oAuthCallback) {
+    NSDictionary *authorizationHeaderDictionary = OAuthorizationKeyValuePairWithCallback(url, method, body, _oAuthConsumerKey, _oAuthConsumerSecret, _oAuthToken, _oAuthTokenSecret, _oAuthCallback);
+    
+	NSMutableArray *authorizationHeaderItems = [NSMutableArray array];
+	for(NSString *key in authorizationHeaderDictionary) {
+		NSString *value = [authorizationHeaderDictionary objectForKey:key];
+		[authorizationHeaderItems addObject:[NSString stringWithFormat:@"%@=\"%@\"",
+											 [key ab_RFC3986EncodedString],
+											 [value ab_RFC3986EncodedString]]];
+	}
+	
+	NSString *authorizationHeaderString = [authorizationHeaderItems componentsJoinedByString:@", "];
+	authorizationHeaderString = [NSString stringWithFormat:@"OAuth %@", authorizationHeaderString];
+	
+	return authorizationHeaderString;
+}
+
+NSURL *OAuthorizationURLWithCallback(NSURL *url, NSString *method, NSData *body, NSString *_oAuthConsumerKey, NSString *_oAuthConsumerSecret, NSString *_oAuthToken, NSString *_oAuthTokenSecret, NSString *_oAuthCallback) {
+    NSDictionary *authorizationHeaderDictionary = OAuthorizationKeyValuePairWithCallback(url, method, body, _oAuthConsumerKey, _oAuthConsumerSecret, _oAuthToken, _oAuthTokenSecret, _oAuthCallback);
+    
+	NSMutableArray *authorizationHeaderItems = [NSMutableArray array];
+	for(NSString *key in authorizationHeaderDictionary) {
+		NSString *value = [authorizationHeaderDictionary objectForKey:key];
+		[authorizationHeaderItems addObject:[NSString stringWithFormat:@"%@=%@",
+											 [key ab_RFC3986EncodedString],
+											 [value ab_RFC3986EncodedString]]];
+	}
+	
+	NSString *authorizationHeaderString = [authorizationHeaderItems componentsJoinedByString:@"&"];
+	NSURL *authURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@?%@", [url absoluteString], authorizationHeaderString]];
+	return authURL;
+}
+
+NSURL *OAuthorizationURL(NSURL *url, NSString *method, NSData *body, NSString *_oAuthConsumerKey, NSString *_oAuthConsumerSecret, NSString *_oAuthToken, NSString *_oAuthTokenSecret) {
+	return OAuthorizationURLWithCallback(url, method, body, _oAuthConsumerKey, _oAuthConsumerSecret, _oAuthToken, _oAuthTokenSecret, nil);
+}
+
+NSDictionary *OAuthorizationKeyValuePairWithCallback(NSURL *url, NSString *method, NSData *body, NSString *_oAuthConsumerKey, NSString *_oAuthConsumerSecret, NSString *_oAuthToken, NSString *_oAuthTokenSecret, NSString *_oAuthCallback) {
 	NSString *_oAuthNonce = [NSString ab_GUID];
 	NSString *_oAuthTimestamp = [NSString stringWithFormat:@"%d", (int)[[NSDate date] timeIntervalSince1970]];
 	NSString *_oAuthSignatureMethod = @"HMAC-SHA1";
@@ -47,7 +87,7 @@ NSString *OAuthorizationHeaderWithCallback(NSURL *url, NSString *method, NSData 
 		[oAuthAuthorizationParameters setObject:_oAuthToken forKey:@"oauth_token"];
 	if (_oAuthCallback)
 		[oAuthAuthorizationParameters setObject:_oAuthCallback forKey:@"oauth_callback"];
-
+    
 	// get query and body parameters
 	NSDictionary *additionalQueryParameters = [NSURL ab_parseURLQueryString:[url query]];
 	NSDictionary *additionalBodyParameters = nil;
@@ -100,16 +140,5 @@ NSString *OAuthorizationHeaderWithCallback(NSURL *url, NSString *method, NSData 
 	NSMutableDictionary *authorizationHeaderDictionary = [[oAuthAuthorizationParameters mutableCopy] autorelease];
 	[authorizationHeaderDictionary setObject:base64Signature forKey:@"oauth_signature"];
 	
-	NSMutableArray *authorizationHeaderItems = [NSMutableArray array];
-	for(NSString *key in authorizationHeaderDictionary) {
-		NSString *value = [authorizationHeaderDictionary objectForKey:key];
-		[authorizationHeaderItems addObject:[NSString stringWithFormat:@"%@=\"%@\"",
-											 [key ab_RFC3986EncodedString],
-											 [value ab_RFC3986EncodedString]]];
-	}
-	
-	NSString *authorizationHeaderString = [authorizationHeaderItems componentsJoinedByString:@", "];
-	authorizationHeaderString = [NSString stringWithFormat:@"OAuth %@", authorizationHeaderString];
-	
-	return authorizationHeaderString;
+	return authorizationHeaderDictionary;
 }
